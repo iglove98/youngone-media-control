@@ -1,0 +1,2 @@
+CREATE TABLE policies(id UUID NOT NULL,name VARCHAR(150) NOT NULL,policy_version BIGINT NOT NULL,status VARCHAR(20) NOT NULL,payload_json LONGTEXT NOT NULL,payload_hash VARCHAR(64) NOT NULL,signature TEXT NOT NULL,signing_key_id VARCHAR(100) NOT NULL,effective_at TIMESTAMP(6) NOT NULL,expires_at TIMESTAMP(6),created_at TIMESTAMP(6) NOT NULL,PRIMARY KEY(id),CONSTRAINT uk_policy_version UNIQUE(policy_version));
+CREATE INDEX ix_policies_status_version ON policies(status,policy_version);

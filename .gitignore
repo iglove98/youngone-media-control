@@ -1,0 +1,39 @@
+# Secrets and certificates
+.env
+*.p12
+*.pfx
+*.pem
+*.key
+infra/secrets/*
+!infra/secrets/.gitkeep
+
+# Java / Gradle
+.gradle/
+.gradle-local/
+**/build/
+server/work-gradle/
+
+# .NET / Visual Studio / WDK
+**/bin/
+**/obj/
+**/x64/
+**/artifacts/
+.vs/
+*.user
+*.suo
+
+# Local tools and packages
+.tools/
+.nuget/
+.dotnet-home/
+.appdata/
+.localappdata/
+.package-*/
+*.zip
+*.iso
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+*.log

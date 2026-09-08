@@ -1,0 +1,15 @@
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+namespace YoungOne.MediaControl.Agent.Enforcement;
+[StructLayout(LayoutKind.Sequential,Pack=1)]
+public struct DriverStatus{public uint Magic;public uint AbiVersion;public ulong AcceptedPolicyVersion;public uint AcceptedRuleCount;public uint PolicyLoaded;public uint EvaluatorReady;public uint EnforcementReady;public int LastPolicyStatus;}
+public sealed class DriverControlClient{
+ const string DevicePath=@"\\.\YoungOneMediaControl";const uint GenericRead=0x80000000,GenericWrite=0x40000000,OpenExisting=3;
+ static readonly uint SetPolicy=CtlCode(0x8000,0x800,0,2);static readonly uint QueryStatus=CtlCode(0x8000,0x801,0,1);
+ public bool TrySetPolicy(byte[] packet,out string resultCode){if(packet.Length<DriverPolicyPacketBuilder.HeaderSize||packet.Length>DriverPolicyPacketBuilder.HeaderSize+DriverPolicyPacketBuilder.MaxPayloadBytes){resultCode="DRIVER_POLICY_PACKET_INVALID";return false;}using SafeFileHandle handle=Open();if(handle.IsInvalid){resultCode="DRIVER_NOT_CONNECTED";return false;}IntPtr input=Marshal.AllocHGlobal(packet.Length);try{Marshal.Copy(packet,0,input,packet.Length);if(!DeviceIoControl(handle,SetPolicy,input,checked((uint)packet.Length),IntPtr.Zero,0,out _,IntPtr.Zero)){resultCode="DRIVER_SET_POLICY_FAILED_"+Marshal.GetLastWin32Error();return false;}resultCode="DRIVER_POLICY_ACCEPTED";return true;}finally{Marshal.FreeHGlobal(input);}}
+ public bool TryQueryStatus(out DriverStatus status,out string resultCode){status=default;using SafeFileHandle handle=Open();if(handle.IsInvalid){resultCode="DRIVER_NOT_CONNECTED";return false;}int size=Marshal.SizeOf<DriverStatus>();IntPtr buffer=Marshal.AllocHGlobal(size);try{if(!DeviceIoControl(handle,QueryStatus,IntPtr.Zero,0,buffer,checked((uint)size),out uint returned,IntPtr.Zero)||returned!=(uint)size){resultCode="DRIVER_STATUS_QUERY_FAILED_"+Marshal.GetLastWin32Error();return false;}status=Marshal.PtrToStructure<DriverStatus>(buffer);if(status.Magic!=DriverPolicyPacketBuilder.Magic||status.AbiVersion!=DriverPolicyPacketBuilder.AbiVersion){resultCode="DRIVER_ABI_MISMATCH";return false;}resultCode=status.EnforcementReady!=0?"DRIVER_READY":"DRIVER_ENFORCEMENT_NOT_READY";return true;}finally{Marshal.FreeHGlobal(buffer);}}
+ static SafeFileHandle Open()=>CreateFile(DevicePath,GenericRead|GenericWrite,0,IntPtr.Zero,OpenExisting,0,IntPtr.Zero);
+ static uint CtlCode(uint type,uint function,uint method,uint access)=>(type<<16)|(access<<14)|(function<<2)|method;
+ [DllImport("kernel32.dll",SetLastError=true,CharSet=CharSet.Unicode)]static extern SafeFileHandle CreateFile(string name,uint access,uint share,IntPtr security,uint creation,uint flags,IntPtr template);
+ [DllImport("kernel32.dll",SetLastError=true)][return:MarshalAs(UnmanagedType.Bool)]static extern bool DeviceIoControl(SafeFileHandle device,uint code,IntPtr input,uint inputSize,IntPtr output,uint outputSize,out uint returned,IntPtr overlapped);
+}

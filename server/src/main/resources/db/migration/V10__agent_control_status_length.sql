@@ -1,0 +1,1 @@
+ALTER TABLE agents MODIFY COLUMN control_status VARCHAR(30) NOT NULL;

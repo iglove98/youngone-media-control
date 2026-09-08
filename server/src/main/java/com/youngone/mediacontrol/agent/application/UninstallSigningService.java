@@ -1,0 +1,9 @@
+package com.youngone.mediacontrol.agent.application;
+import org.springframework.beans.factory.annotation.Value;import org.springframework.stereotype.Service;import java.nio.charset.StandardCharsets;import java.security.*;import java.security.spec.*;import java.util.Base64;
+@Service public class UninstallSigningService{
+ private final PrivateKey privateKey;private final PublicKey publicKey;private final String keyId;private final boolean ephemeral;
+ public UninstallSigningService(@Value("${youngone.uninstall.signing-private-key:}")String encodedPrivate,@Value("${youngone.uninstall.signing-public-key:}")String encodedPublic,@Value("${youngone.uninstall.signing-key-id:dev-ephemeral-uninstall}")String keyId){try{if(encodedPrivate==null||encodedPrivate.isBlank()){KeyPair p=KeyPairGenerator.getInstance("Ed25519").generateKeyPair();privateKey=p.getPrivate();publicKey=p.getPublic();ephemeral=true;}else{if(encodedPublic==null||encodedPublic.isBlank())throw new IllegalStateException("Uninstall public key is required with private key");KeyFactory f=KeyFactory.getInstance("Ed25519");privateKey=f.generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(encodedPrivate)));publicKey=f.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(encodedPublic)));ephemeral=false;}this.keyId=keyId;}catch(GeneralSecurityException e){throw new IllegalStateException("Invalid Ed25519 uninstall signing key",e);}}
+ public String sign(String payload){try{Signature s=Signature.getInstance("Ed25519");s.initSign(privateKey);s.update(payload.getBytes(StandardCharsets.UTF_8));return Base64.getEncoder().encodeToString(s.sign());}catch(GeneralSecurityException e){throw new IllegalStateException(e);}}
+ public String rawPublicKey(){byte[] x509=publicKey.getEncoded();return Base64.getEncoder().encodeToString(java.util.Arrays.copyOfRange(x509,x509.length-32,x509.length));}
+ public String keyId(){return keyId;}public boolean isEphemeral(){return ephemeral;}
+}

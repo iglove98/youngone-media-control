@@ -1,0 +1,20 @@
+spring:
+ application.name: youngone-media-control-server
+ datasource:
+  url: ${YMC_DB_URL:jdbc:mariadb://localhost:3306/media_control}
+  username: ${YMC_DB_USERNAME:media_control_app}
+  password: ${YMC_DB_PASSWORD:change-me}
+ jpa:
+  open-in-view: false
+  hibernate.ddl-auto: validate
+ flyway.enabled: true
+youngone.agent.bootstrap-token: ${YMC_AGENT_BOOTSTRAP_TOKEN:local-development-only}
+youngone.policy:
+ signing-private-key: ${YMC_POLICY_SIGNING_PRIVATE_KEY:}
+ signing-public-key: ${YMC_POLICY_SIGNING_PUBLIC_KEY:}
+ signing-key-id: ${YMC_POLICY_SIGNING_KEY_ID:dev-ephemeral}
+youngone.uninstall:
+ signing-private-key: ${YMC_UNINSTALL_SIGNING_PRIVATE_KEY:}
+ signing-public-key: ${YMC_UNINSTALL_SIGNING_PUBLIC_KEY:}
+ signing-key-id: ${YMC_UNINSTALL_SIGNING_KEY_ID:dev-ephemeral-uninstall}
+management.endpoints.web.exposure.include: health,info,metrics

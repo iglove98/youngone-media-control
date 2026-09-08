@@ -1,0 +1,14 @@
+{
+  "Agent": {
+    "ServerBaseUrl": "https://media-control.example.internal:8443",
+    "HeartbeatSeconds": 60,
+    "DeviceScanSeconds": 3,
+    "DataDirectory": "C:\\ProgramData\\YoungOne\\MediaControl",
+    "LogRetentionDays": 30,
+    "LogMaxFileMb": 20,
+    "EnvironmentType": "PHYSICAL",
+    "BootstrapToken": "REPLACE_FROM_SERVER_SECRET",
+    "PinnedPolicyPublicKey": "BASE64_X509_ED25519_PUBLIC_KEY",
+    "PinnedUninstallPublicKey": "DIFFERENT_BASE64_RAW_ED25519_PUBLIC_KEY"
+  }
+}

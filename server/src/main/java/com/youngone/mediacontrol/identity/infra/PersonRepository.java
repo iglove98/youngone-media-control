@@ -1,0 +1,1 @@
+package com.youngone.mediacontrol.identity.infra;import com.youngone.mediacontrol.identity.domain.Person;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface PersonRepository extends JpaRepository<Person,UUID>{List<Person>findByAuthoritativePersonKey(String key);}

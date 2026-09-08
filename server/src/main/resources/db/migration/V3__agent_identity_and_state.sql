@@ -1,0 +1,14 @@
+ALTER TABLE agents ADD COLUMN environment_type VARCHAR(30) NOT NULL DEFAULT 'PHYSICAL';
+ALTER TABLE agents ADD COLUMN device_evidence_hash VARCHAR(64);
+ALTER TABLE agents ADD COLUMN tpm_ek_hash VARCHAR(64);
+ALTER TABLE agents ADD COLUMN vdi_provider_id VARCHAR(150);
+ALTER TABLE agents ADD COLUMN organization_device_id VARCHAR(100);
+ALTER TABLE agents ADD COLUMN boot_session_id VARCHAR(100) NOT NULL DEFAULT 'MIGRATED';
+ALTER TABLE agents ADD COLUMN connection_status VARCHAR(20) NOT NULL DEFAULT 'OFFLINE';
+ALTER TABLE agents ADD COLUMN control_status VARCHAR(20) NOT NULL DEFAULT 'UNKNOWN';
+ALTER TABLE agents ADD COLUMN security_status VARCHAR(30) NOT NULL DEFAULT 'NORMAL';
+ALTER TABLE agents ADD COLUMN identity_disposition VARCHAR(30) NOT NULL DEFAULT 'NEW';
+ALTER TABLE agents ADD COLUMN ephemeral BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX ix_agents_device_evidence ON agents(device_evidence_hash,environment_type);
+CREATE INDEX ix_agents_connection_status ON agents(connection_status,last_seen_at);
+CREATE TABLE agent_identity_conflicts(id BIGINT NOT NULL AUTO_INCREMENT,agent_id UUID NOT NULL,installation_id VARCHAR(100) NOT NULL,existing_evidence_hash VARCHAR(64),incoming_evidence_hash VARCHAR(64),incoming_boot_session_id VARCHAR(100),detected_at TIMESTAMP(6) NOT NULL,PRIMARY KEY(id),FOREIGN KEY(agent_id) REFERENCES agents(id));

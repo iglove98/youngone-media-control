@@ -1,0 +1,3 @@
+using System.ComponentModel.DataAnnotations;
+namespace YoungOne.MediaControl.Agent;
+public sealed class AgentOptions{[Required]public Uri ServerBaseUrl{get;set;}=new("https://localhost:8443");[Range(15,3600)]public int HeartbeatSeconds{get;set;}=60;[Range(1,60)]public int DeviceScanSeconds{get;set;}=3;public string EnvironmentType{get;set;}="PHYSICAL";public string? BootstrapToken{get;set;}public string? PinnedPolicyPublicKey{get;set;}public string? PinnedUninstallPublicKey{get;set;}[Range(1,365)]public int LogRetentionDays{get;set;}=30;[Range(1,100)]public int LogMaxFileMb{get;set;}=20;public string DataDirectory{get;set;}=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),"YoungOne","MediaControl");}

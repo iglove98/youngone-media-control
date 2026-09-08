@@ -1,0 +1,6 @@
+package com.youngone.mediacontrol.policy.domain;
+import jakarta.persistence.*;import java.time.Instant;import java.util.UUID;
+@Entity @Table(name="policy_assignments",indexes=@Index(name="ix_assignment_target",columnList="target_type,target_id,enabled"))public class PolicyAssignment{
+ @Id private UUID id;@Column(name="policy_id",nullable=false)private UUID policyId;@Enumerated(EnumType.STRING)@Column(name="target_type",nullable=false,length=20)private AssignmentTargetType targetType;@Column(name="target_id",length=150)private String targetId;@Column(nullable=false)private int priority;@Column(nullable=false)private boolean enabled;@Column(name="created_by",nullable=false,length=100)private String createdBy;@Column(name="created_at",nullable=false)private Instant createdAt;
+ protected PolicyAssignment(){}public PolicyAssignment(UUID id,UUID policyId,AssignmentTargetType type,String targetId,int priority,String createdBy,Instant at){this.id=id;this.policyId=policyId;this.targetType=type;this.targetId=targetId;this.priority=priority;this.enabled=true;this.createdBy=createdBy;this.createdAt=at;}public UUID getPolicyId(){return policyId;}public int getPriority(){return priority;}public AssignmentTargetType getTargetType(){return targetType;}
+}

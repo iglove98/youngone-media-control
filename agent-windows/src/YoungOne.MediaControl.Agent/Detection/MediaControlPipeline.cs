@@ -1,0 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using YoungOne.MediaControl.Agent.Enforcement;
+using YoungOne.MediaControl.Agent.Policy;
+using YoungOne.MediaControl.Agent.Storage;
+namespace YoungOne.MediaControl.Agent.Detection;
+public interface IMediaEventSource{IAsyncEnumerable<DetectedMedia> WatchAsync(CancellationToken ct);}
+public sealed class NullMediaEventSource:IMediaEventSource{public async IAsyncEnumerable<DetectedMedia> WatchAsync([System.Runtime.CompilerServices.EnumeratorCancellation]CancellationToken ct){await Task.CompletedTask;yield break;}}
+public sealed class MediaControlPipeline(IMediaEventSource source,PolicyDecisionEngine policies,IMediaEnforcer enforcer,IUserNotifier notifier,RiskEventQueue queue,ILogger<MediaControlPipeline> logger):BackgroundService{
+ protected override async Task ExecuteAsync(CancellationToken ct){await foreach(var media in source.WatchAsync(ct)){try{var decision=policies.Evaluate(media,DateTimeOffset.UtcNow);var applied=await enforcer.ApplyAsync(media,decision,ct);var occurred=DateTimeOffset.UtcNow;bool popupShown=await notifier.NotifyAsync(media,decision,applied,occurred,ct);string eventId=Guid.CreateVersion7().ToString();var canonical=new{eventId,media.UserId,media.DeviceInstanceId,media.SerialHash,media.MediaType,Operation=media.Operation.ToString(),Decision=decision.Decision.ToString(),decision.ReasonCode,decision.PolicyId,decision.PolicyVersion,EnforcementApplied=applied.Applied,EnforcementResultCode=applied.ResultCode,PopupShown=popupShown,OccurredAt=occurred};string json=JsonSerializer.Serialize(canonical);string hash=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json))).ToLowerInvariant();var request=new RiskEventRequest(eventId,hash,media.UserId,media.DeviceInstanceId,media.SerialHash,media.MediaType,media.Operation.ToString(),decision.Decision.ToString(),decision.ReasonCode,decision.PolicyId,decision.PolicyVersion,applied.Applied,applied.ResultCode,popupShown,occurred);await queue.EnqueueAsync(request,ct);logger.LogInformation("Media {Device} decision {Decision}, applied={Applied}, result={Result}",media.DeviceInstanceId,decision.Decision,applied.Applied,applied.ResultCode);}catch(Exception ex){logger.LogError(ex,"Media event pipeline failed");}}}
+}

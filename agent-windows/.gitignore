@@ -1,0 +1,11 @@
+.vs/
+**/bin/
+**/obj/
+**/x64/
+**/ARM64/
+*.user
+*.suo
+*.cer
+*.pfx
+*.pvk
+*.snk

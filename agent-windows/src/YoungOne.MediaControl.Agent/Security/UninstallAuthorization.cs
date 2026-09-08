@@ -1,0 +1,26 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Options;
+using NSec.Cryptography;
+using YoungOne.MediaControl.Agent.Identity;
+namespace YoungOne.MediaControl.Agent.Security;
+public sealed record UninstallTokenEnvelope(string PayloadJson,string PayloadHash,string Signature,string SigningKeyId);
+public sealed record UninstallTokenPayload(int SchemaVersion,Guid AgentId,string InstallationId,string Nonce,DateTimeOffset IssuedAt,DateTimeOffset ExpiresAt,string Reason,string ApprovedBy);
+public sealed record UninstallApproval(string Nonce,Guid AgentId,string InstallationId,DateTimeOffset ExpiresAt,DateTimeOffset AuthorizedAt);
+public static class UninstallTokenVerifier{
+ public static UninstallTokenPayload Verify(UninstallTokenEnvelope envelope,string pinnedPublicKey,Guid expectedAgentId,string expectedInstallationId,DateTimeOffset now){
+  if(string.IsNullOrWhiteSpace(pinnedPublicKey))throw new SecurityException("Pinned uninstall public key is not configured");byte[] payload=Encoding.UTF8.GetBytes(envelope.PayloadJson);string hash=Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant();if(!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(hash),Encoding.ASCII.GetBytes(envelope.PayloadHash)))throw new SecurityException("Uninstall token hash mismatch");
+  byte[] keyBytes=Convert.FromBase64String(pinnedPublicKey);if(keyBytes.Length<32)throw new SecurityException("Invalid uninstall public key");PublicKey key=PublicKey.Import(SignatureAlgorithm.Ed25519,keyBytes.AsSpan(keyBytes.Length-32),KeyBlobFormat.RawPublicKey);if(!SignatureAlgorithm.Ed25519.Verify(key,payload,Convert.FromBase64String(envelope.Signature)))throw new SecurityException("Uninstall token signature mismatch");
+  UninstallTokenPayload token=JsonSerializer.Deserialize<UninstallTokenPayload>(envelope.PayloadJson,new JsonSerializerOptions{PropertyNameCaseInsensitive=true})??throw new SecurityException("Invalid uninstall token payload");if(token.SchemaVersion!=1)throw new SecurityException("Unsupported uninstall token schema");if(token.AgentId!=expectedAgentId||!StringComparer.OrdinalIgnoreCase.Equals(token.InstallationId,expectedInstallationId))throw new SecurityException("Uninstall token target mismatch");if(string.IsNullOrWhiteSpace(token.Nonce)||token.Nonce.Length>100)throw new SecurityException("Invalid uninstall nonce");if(token.IssuedAt>now.AddMinutes(5)||token.ExpiresAt<=now||token.ExpiresAt-token.IssuedAt>TimeSpan.FromHours(1))throw new SecurityException("Uninstall token is not within its validity window");return token;
+ }
+}
+public sealed class UninstallAuthorizationStore{
+ static readonly byte[] Entropy=Encoding.UTF8.GetBytes("YoungOne.MediaControl.UninstallApproval.v1");readonly string approvalPath;readonly string ledgerPath;readonly AgentOptions options;readonly AgentCredentialStore credentials;readonly InstallationIdentityStore identity;
+ public UninstallAuthorizationStore(IOptions<AgentOptions> configured,AgentCredentialStore credentials,InstallationIdentityStore identity){options=configured.Value;this.credentials=credentials;this.identity=identity;approvalPath=Path.Combine(options.DataDirectory,"uninstall.approval");ledgerPath=Path.Combine(options.DataDirectory,"uninstall-nonces.dat");}
+ public void Authorize(UninstallTokenEnvelope envelope,DateTimeOffset now){AgentCredential credential=credentials.Load()??throw new SecurityException("Agent is not registered");string installationId=identity.GetOrCreate();UninstallTokenPayload token=UninstallTokenVerifier.Verify(envelope,options.PinnedUninstallPublicKey??"",credential.AgentId,installationId,now);if(Consumed().Contains(token.Nonce,StringComparer.Ordinal))throw new SecurityException("Uninstall token was already consumed");Directory.CreateDirectory(options.DataDirectory);WriteProtected(approvalPath,JsonSerializer.SerializeToUtf8Bytes(new UninstallApproval(token.Nonce,token.AgentId,token.InstallationId,token.ExpiresAt,now)));}
+ public void Consume(DateTimeOffset now){if(!File.Exists(approvalPath))throw new SecurityException("Uninstall approval is missing");UninstallApproval approval=JsonSerializer.Deserialize<UninstallApproval>(ReadProtected(approvalPath))??throw new SecurityException("Invalid uninstall approval");if(approval.ExpiresAt<=now)throw new SecurityException("Uninstall approval expired");var consumed=Consumed();if(consumed.Contains(approval.Nonce,StringComparer.Ordinal))throw new SecurityException("Uninstall approval already consumed");consumed.Add(approval.Nonce);WriteProtected(ledgerPath,JsonSerializer.SerializeToUtf8Bytes(consumed.TakeLast(100).ToList()));File.Delete(approvalPath);}
+ List<string> Consumed()=>File.Exists(ledgerPath)?JsonSerializer.Deserialize<List<string>>(ReadProtected(ledgerPath))??[]:[];
+ static byte[] ReadProtected(string path)=>ProtectedData.Unprotect(File.ReadAllBytes(path),Entropy,DataProtectionScope.LocalMachine);
+ static void WriteProtected(string path,byte[] plain){byte[] protectedBytes=ProtectedData.Protect(plain,Entropy,DataProtectionScope.LocalMachine);string temp=path+".tmp";File.WriteAllBytes(temp,protectedBytes);File.Move(temp,path,true);}
+}

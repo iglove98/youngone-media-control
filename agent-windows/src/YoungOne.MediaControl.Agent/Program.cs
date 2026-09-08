@@ -1,0 +1,9 @@
+using YoungOne.MediaControl.Agent;
+using YoungOne.MediaControl.Agent.Identity;
+using YoungOne.MediaControl.Agent.Policy;
+using YoungOne.MediaControl.Agent.Transport;
+using YoungOne.MediaControl.Agent.Enforcement;
+using YoungOne.MediaControl.Agent.Storage;
+using YoungOne.MediaControl.Agent.Detection;
+using YoungOne.MediaControl.Agent.Logging;
+var builder=Host.CreateApplicationBuilder(args);builder.Services.AddSingleton<ILoggerProvider,RollingFileLoggerProvider>();builder.Services.AddWindowsService(o=>o.ServiceName="YoungOne Media Control Agent");builder.Services.AddOptions<AgentOptions>().Bind(builder.Configuration.GetSection("Agent")).ValidateDataAnnotations().ValidateOnStart();builder.Services.AddSingleton<InstallationIdentityStore>();builder.Services.AddSingleton<AgentCredentialStore>();builder.Services.AddSingleton<DeviceEvidenceProvider>();builder.Services.AddSingleton<PolicyCache>();builder.Services.AddSingleton<PolicyDecisionEngine>();builder.Services.AddSingleton<DriverControlClient>();builder.Services.AddSingleton<DriverPolicySynchronizer>();builder.Services.AddSingleton<AgentRuntimeStatusProvider>();builder.Services.AddSingleton<IMediaEnforcer,DriverMediaEnforcer>();builder.Services.AddSingleton<RiskEventQueue>();builder.Services.AddSingleton<VolumeDeviceResolver>();builder.Services.AddSingleton<WindowsMediaEventSource>();builder.Services.AddSingleton<KernelMinifilterEventSource>();builder.Services.AddSingleton<IMediaEventSource,CompositeMediaEventSource>();builder.Services.AddSingleton<IUserNotifier,NamedPipeUserNotifier>();builder.Services.AddHttpClient<MediaControlClient>();builder.Services.AddHostedService<AgentWorker>();builder.Services.AddHostedService<MediaControlPipeline>();builder.Services.AddHostedService<RiskEventDispatcher>();await builder.Build().RunAsync();

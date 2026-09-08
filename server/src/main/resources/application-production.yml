@@ -1,0 +1,30 @@
+spring:
+ config.activate.on-profile: production
+ datasource:
+  url: ${YMC_DB_URL}
+  username: ${YMC_DB_USERNAME}
+  password: ${YMC_DB_PASSWORD}
+ jpa:
+  hibernate.ddl-auto: validate
+server:
+ port: 8443
+ ssl:
+  enabled: true
+  key-store: ${YMC_TLS_KEYSTORE}
+  key-store-password: ${YMC_TLS_KEYSTORE_PASSWORD}
+  key-store-type: PKCS12
+  enabled-protocols: TLSv1.3,TLSv1.2
+management:
+ endpoints.web.exposure.include: health,info
+ endpoint.health:
+  probes.enabled: true
+  show-details: never
+youngone.agent.bootstrap-token: ${YMC_AGENT_BOOTSTRAP_TOKEN}
+youngone.policy:
+ signing-private-key: ${YMC_POLICY_SIGNING_PRIVATE_KEY}
+ signing-public-key: ${YMC_POLICY_SIGNING_PUBLIC_KEY}
+ signing-key-id: ${YMC_POLICY_SIGNING_KEY_ID}
+youngone.uninstall:
+ signing-private-key: ${YMC_UNINSTALL_SIGNING_PRIVATE_KEY}
+ signing-public-key: ${YMC_UNINSTALL_SIGNING_PUBLIC_KEY}
+ signing-key-id: ${YMC_UNINSTALL_SIGNING_KEY_ID}

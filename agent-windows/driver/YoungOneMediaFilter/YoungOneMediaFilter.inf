@@ -1,0 +1,41 @@
+[Version]
+Signature="$WINDOWS NT$"
+Class="ActivityMonitor"
+ClassGuid={b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}
+Provider=%ProviderName%
+DriverVer=09/06/2026,0.25.0.0
+CatalogFile=YoungOneMediaFilter.cat
+PnpLockdown=1
+[SourceDisksNames]
+1=%DiskName%,,,
+[SourceDisksFiles]
+YoungOneMediaFilter.sys=1
+[DestinationDirs]
+DefaultDestDir=13
+[DefaultInstall.NTamd64]
+CopyFiles=DriverCopyFiles
+[DefaultInstall.NTamd64.Services]
+AddService=YoungOneMediaFilter,,ServiceInstall
+[DriverCopyFiles]
+YoungOneMediaFilter.sys
+[ServiceInstall]
+DisplayName=%ServiceName%
+Description=%ServiceDescription%
+ServiceBinary=%13%\YoungOneMediaFilter.sys
+Dependencies=FltMgr
+ServiceType=2
+StartType=3
+ErrorControl=1
+LoadOrderGroup="FSFilter Activity Monitor"
+AddReg=Instances.AddRegistry
+[Instances.AddRegistry]
+HKR,"Parameters\Instances","DefaultInstance",0x00000000,%DefaultInstance%
+HKR,"Parameters\Instances\"%DefaultInstance%,"Altitude",0x00000000,%Altitude%
+HKR,"Parameters\Instances\"%DefaultInstance%,"Flags",0x00010001,0
+[Strings]
+ProviderName="YoungOne"
+ServiceName="YoungOne Media Control File Filter"
+ServiceDescription="Detection-first removable media file-system minifilter"
+DefaultInstance="YoungOneMediaFilter Instance"
+Altitude="389900"
+DiskName="YoungOne Media Control Filter Installation Media"

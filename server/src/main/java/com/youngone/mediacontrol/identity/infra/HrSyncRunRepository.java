@@ -1,0 +1,1 @@
+package com.youngone.mediacontrol.identity.infra;import com.youngone.mediacontrol.identity.domain.HrSyncRun;import org.springframework.data.jpa.repository.JpaRepository;import java.util.UUID;public interface HrSyncRunRepository extends JpaRepository<HrSyncRun,UUID>{}

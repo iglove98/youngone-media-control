@@ -1,0 +1,44 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="YoungOne Media Control Agent" Manufacturer="YoungOne" Version="0.25.0"
+           UpgradeCode="9D2AB112-6F8B-4B56-B07C-7C9A65B99001" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed."/>
+    <MediaTemplate EmbedCab="yes"/>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="YoungOneFolder" Name="YoungOne">
+        <Directory Id="MediaControlFolder" Name="MediaControl">
+          <Directory Id="INSTALLFOLDER" Name="Agent">
+            <Component Id="AgentServiceComponent" Guid="F0F02BDD-0E4C-4C40-9937-BEA7D6BDE101">
+              <File Id="AgentExe" Source="$(PublishDir)\YoungOne.MediaControl.Agent.exe" KeyPath="yes"/>
+              <ServiceInstall Id="AgentServiceInstall" Name="YoungOneMediaControlAgent"
+                DisplayName="YoungOne Media Control Agent" Description="YoungOne endpoint media-control service"
+                Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem"/>
+              <ServiceControl Id="AgentServiceControl" Name="YoungOneMediaControlAgent"
+                Start="install" Stop="both" Remove="uninstall" Wait="yes"/>
+            </Component>
+            <Component Id="UserUiComponent" Guid="1E3765A1-5203-4EDC-A144-0C99BC4B1401">
+              <File Id="UserUiExe" Source="$(UiPublishDir)\YoungOne.MediaControl.UserUi.exe" KeyPath="yes">
+                <Shortcut Id="UserUiStartupShortcut" Directory="CommonStartupFolder"
+                  Name="YoungOne Media Control" WorkingDirectory="INSTALLFOLDER" Advertise="no"/>
+              </File>
+            </Component>
+            <Component Id="AgentCtlComponent" Guid="BDA66276-88BC-43A3-A4BB-E492A22E4801">
+              <File Id="AgentCtlExe" Source="$(CtlPublishDir)\YoungOne.MediaControl.AgentCtl.exe" KeyPath="yes"/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="MainFeature">
+      <ComponentRef Id="AgentServiceComponent"/>
+      <ComponentRef Id="UserUiComponent"/>
+      <ComponentRef Id="AgentCtlComponent"/>
+    </Feature>
+    <CustomAction Id="ValidateAndConsumeUninstallApproval" FileRef="AgentCtlExe"
+                  ExeCommand="consume-uninstall-approval" Execute="immediate"
+                  Return="check" Impersonate="no"/>
+    <InstallExecuteSequence>
+      <Custom Action="ValidateAndConsumeUninstallApproval" Before="StopServices"
+              Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE"/>
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

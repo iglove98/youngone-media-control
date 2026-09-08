@@ -1,0 +1,3 @@
+package com.youngone.mediacontrol.identity.api;
+import com.youngone.mediacontrol.identity.integration.*;import jakarta.validation.constraints.*;import java.util.UUID;
+public final class HrModels{private HrModels(){}public record SourceCreate(@NotBlank@Size(max=150)String name,@NotNull HrConnectorType connectorType,@NotNull SyncMode syncMode,@Min(0)@Max(1000)int authorityRank,@NotBlank@Size(max=10000)String configJson,@Size(max=300)String secretRef){}public record SourceResponse(UUID sourceId){}public record ImportResponse(UUID syncRunId,boolean dryRun,long readCount,long createCount,long updateCount,long linkCount,long conflictCount,long rejectedCount,long unchangedCount,java.util.List<String>errors){} }

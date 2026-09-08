@@ -1,0 +1,1 @@
+package com.youngone.mediacontrol.identity.infra;import com.youngone.mediacontrol.identity.domain.HrIntegrationSource;import org.springframework.data.jpa.repository.JpaRepository;import java.util.UUID;public interface HrIntegrationSourceRepository extends JpaRepository<HrIntegrationSource,UUID>{}

@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csproj,props,json,wxs,wixproj}]
+indent_style = space
+indent_size = 4
+
+[*.{c,h,vcxproj,inf}]
+indent_style = space
+indent_size = 4
+
+[*.cs]
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1725.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1869.severity = none
+dotnet_diagnostic.CA1873.severity = none

@@ -1,0 +1,2 @@
+﻿externalObjectId,immutablePersonKey,employeeNumber,loginId,windowsSid,upn,email,displayName,employmentStatus,organizationExternalId,managerImmutableKey,groups,effectiveFrom,effectiveTo,sourceVersion
+hr-10001,person-immutable-10001,10001,kim.one,S-1-5-21-EXAMPLE-10001,kim.one@example.com,kim.one@example.com,"Kim, One",ACTIVE,ORG-SECURITY,person-immutable-90001,MEDIA-USERS;HQ,2026-09-01T00:00:00Z,,2026-09-04T01:00:00Z

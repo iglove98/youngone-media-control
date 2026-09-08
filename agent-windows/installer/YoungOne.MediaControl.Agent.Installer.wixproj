@@ -1,0 +1,6 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <OutputName>YoungOneMediaControlAgent</OutputName>
+    <DefineConstants>PublishDir=..\artifacts\win-x64\agent;UiPublishDir=..\artifacts\win-x64\ui;CtlPublishDir=..\artifacts\win-x64\ctl</DefineConstants>
+  </PropertyGroup>
+</Project>

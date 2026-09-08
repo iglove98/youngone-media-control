@@ -1,0 +1,17 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
+using YoungOne.MediaControl.Agent.Detection;
+namespace YoungOne.MediaControl.Agent.Storage;
+public sealed record QueuedRiskEvent(RiskEventRequest Event,int AttemptCount);
+public sealed class RiskEventQueue{
+ readonly string cs;
+ public RiskEventQueue(IOptions<AgentOptions> o){Directory.CreateDirectory(o.Value.DataDirectory);cs=new SqliteConnectionStringBuilder{DataSource=Path.Combine(o.Value.DataDirectory,"risk-queue.db"),Mode=SqliteOpenMode.ReadWriteCreate,Pooling=false}.ToString();Initialize();}
+ void Initialize(){using var c=new SqliteConnection(cs);c.Open();using var x=c.CreateCommand();x.CommandText="PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS pending_risk_events(event_id TEXT PRIMARY KEY,payload_json TEXT NOT NULL,attempt_count INTEGER NOT NULL DEFAULT 0,next_attempt_at TEXT NOT NULL,last_error TEXT,created_at TEXT NOT NULL);";x.ExecuteNonQuery();}
+ public async Task<long> CountAsync(CancellationToken ct){await using var c=new SqliteConnection(cs);await c.OpenAsync(ct);await using var x=c.CreateCommand();x.CommandText="SELECT COUNT(*) FROM pending_risk_events";object? value=await x.ExecuteScalarAsync(ct);return Convert.ToInt64(value,System.Globalization.CultureInfo.InvariantCulture);}
+ public async Task EnqueueAsync(RiskEventRequest e,CancellationToken ct){await using var c=new SqliteConnection(cs);await c.OpenAsync(ct);await using var x=c.CreateCommand();x.CommandText="INSERT OR IGNORE INTO pending_risk_events(event_id,payload_json,next_attempt_at,created_at) VALUES($id,$json,$now,$now)";x.Parameters.AddWithValue("$id",e.EventId);x.Parameters.AddWithValue("$json",JsonSerializer.Serialize(e));x.Parameters.AddWithValue("$now",DateTimeOffset.UtcNow.ToString("O"));await x.ExecuteNonQueryAsync(ct);}
+ public async Task<IReadOnlyList<QueuedRiskEvent>> DueAsync(int limit,CancellationToken ct){var list=new List<QueuedRiskEvent>();await using var c=new SqliteConnection(cs);await c.OpenAsync(ct);await using var x=c.CreateCommand();x.CommandText="SELECT payload_json,attempt_count FROM pending_risk_events WHERE next_attempt_at<=$now ORDER BY created_at LIMIT $limit";x.Parameters.AddWithValue("$now",DateTimeOffset.UtcNow.ToString("O"));x.Parameters.AddWithValue("$limit",limit);await using var r=await x.ExecuteReaderAsync(ct);while(await r.ReadAsync(ct)){var e=JsonSerializer.Deserialize<RiskEventRequest>(r.GetString(0));if(e is not null)list.Add(new(e,r.GetInt32(1)));}return list;}
+ public Task SentAsync(string id,CancellationToken ct)=>ExecuteAsync("DELETE FROM pending_risk_events WHERE event_id=$id",id,null,ct);
+ public Task FailedAsync(string id,string error,int attempt,CancellationToken ct){var delay=TimeSpan.FromSeconds(Math.Min(900,Math.Pow(2,Math.Min(attempt+1,9))))+TimeSpan.FromMilliseconds(Random.Shared.Next(1000));return ExecuteAsync("UPDATE pending_risk_events SET attempt_count=attempt_count+1,next_attempt_at=$next,last_error=$error WHERE event_id=$id",id,(DateTimeOffset.UtcNow+delay,error),ct);}
+ async Task ExecuteAsync(string sql,string id,(DateTimeOffset next,string error)? f,CancellationToken ct){await using var c=new SqliteConnection(cs);await c.OpenAsync(ct);await using var x=c.CreateCommand();x.CommandText=sql;x.Parameters.AddWithValue("$id",id);if(f is not null){x.Parameters.AddWithValue("$next",f.Value.next.ToString("O"));x.Parameters.AddWithValue("$error",f.Value.error[..Math.Min(1000,f.Value.error.Length)]);}await x.ExecuteNonQueryAsync(ct);}
+}
